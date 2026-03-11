@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Embodied Wind Prototype</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- TensorFlow.js + pose detection -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1>Embodied Wind Prototype v1</h1>
+      <div class="controls">
+        <button id="startCameraBtn">Start Camera</button>
+        <button id="connectWsBtn">Connect WS</button>
+      </div>
+    </header>
+
+    <div id="status">Ready to start.</div>
+
+    <main class="layout">
+      <section class="stage">
+        <video id="video" playsinline autoplay muted></video>
+        <canvas id="overlay"></canvas>
+
+        <div class="stats">
+          <div class="card">
+            <h2>People Count</h2>
+            <div id="peopleCount">0</div>
+          </div>
+          <div class="card">
+            <h2>Motion Score</h2>
+            <div id="motionScore">0.000</div>
+          </div>
+          <div class="card">
+            <h2>Energy Score</h2>
+            <div id="energyScore">0.000</div>
+          </div>
+        </div>
+
+        <div class="wind-panel">
+          <h2>Wind Output Preview</h2>
+          <canvas id="windCanvas" width="960" height="400"></canvas>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <h2>Live Log</h2>
+        <pre id="logBox"></pre>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
