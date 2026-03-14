@@ -1,62 +1,347 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Embodied Wind Prototype</title>
-  <link rel="stylesheet" href="styles.css" />
-
-  <!-- TensorFlow.js + pose detection -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-</head>
-<body>
-  <div class="app">
-    <header class="topbar">
-      <h1>Embodied Wind Prototype v1</h1>
-      <div class="controls">
-        <button id="startCameraBtn">Start Camera</button>
-        <button id="connectWsBtn">Connect WS</button>
-      </div>
-    </header>
-
-    <div id="status">Ready to start.</div>
-
-    <main class="layout">
-      <section class="stage">
-        <video id="video" playsinline autoplay muted></video>
-        <canvas id="overlay"></canvas>
-
-        <div class="stats">
-          <div class="card">
-            <h2>People Count</h2>
-            <div id="peopleCount">0</div>
-          </div>
-          <div class="card">
-            <h2>Motion Score</h2>
-            <div id="motionScore">0.000</div>
-          </div>
-          <div class="card">
-            <h2>Energy Score</h2>
-            <div id="energyScore">0.000</div>
-          </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Embodied Energy House</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Embodied energy interface</p>
+          <h1>Power Your Home</h1>
+          <p class="subtitle">
+            Motion gradually energizes the home and distributes output across
+            electricity, heat, hydro, and wind.
+          </p>
         </div>
 
-        <div class="wind-panel">
-          <h2>Wind Output Preview</h2>
-          <canvas id="windCanvas" width="960" height="400"></canvas>
+        <div class="topbar-actions">
+          <button id="startCameraBtn" class="btn btn-primary">Start Camera</button>
+          <button id="connectWsBtn" class="btn btn-secondary">Connect WS</button>
         </div>
-      </section>
+      </header>
 
-      <aside class="sidebar">
-        <h2>Live Log</h2>
-        <pre id="logBox"></pre>
-      </aside>
-    </main>
-  </div>
+      <main class="dashboard">
+        <section class="hero-card card">
+          <div class="card-header">
+            <div>
+              <p class="card-kicker">Live house visualization</p>
+              <h2>House Activation</h2>
+            </div>
+            <div id="systemStatus" class="status-pill offline">Idle</div>
+          </div>
 
-  <script type="module" src="./app.js"></script>
-</body>
+          <div class="house-stage" id="houseStage">
+            <div id="houseAura" class="house-aura"></div>
+            <div id="energyPulse" class="energy-pulse"></div>
+
+            <div id="goalOverlay" class="goal-overlay">
+              <div class="goal-badge">
+                <span class="goal-kicker">Goal reached</span>
+                <strong>House Fully Powered</strong>
+                <span>+100 points</span>
+              </div>
+            </div>
+
+            <svg
+              class="house-svg"
+              viewBox="0 0 800 460"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-label="House energy visualization"
+            >
+              <defs>
+                <linearGradient id="roofGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6a7488" />
+                  <stop offset="100%" stop-color="#3c4658" />
+                </linearGradient>
+
+                <linearGradient id="wallGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#dce7f7" />
+                  <stop offset="100%" stop-color="#9aa7bf" />
+                </linearGradient>
+
+                <linearGradient id="solarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#4bd4ff" />
+                  <stop offset="100%" stop-color="#123d80" />
+                </linearGradient>
+
+                <linearGradient id="meterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#c9f5ff" />
+                  <stop offset="100%" stop-color="#59b6ff" />
+                </linearGradient>
+
+                <filter id="windowGlow" x="-80%" y="-80%" width="260%" height="260%">
+                  <feGaussianBlur stdDeviation="10" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <g class="scene">
+                <line class="ground-line" x1="70" y1="392" x2="730" y2="392" />
+
+                <circle class="sun-core" cx="122" cy="74" r="24" />
+                <g id="sunRays" class="sun-rays">
+                  <line x1="122" y1="18" x2="122" y2="0" />
+                  <line x1="122" y1="148" x2="122" y2="128" />
+                  <line x1="64" y1="74" x2="42" y2="74" />
+                  <line x1="202" y1="74" x2="180" y2="74" />
+                  <line x1="83" y1="35" x2="66" y2="18" />
+                  <line x1="160" y1="112" x2="176" y2="128" />
+                  <line x1="83" y1="112" x2="66" y2="128" />
+                  <line x1="160" y1="35" x2="176" y2="18" />
+                </g>
+
+                <g class="ambient-clouds">
+                  <ellipse cx="220" cy="110" rx="90" ry="34" />
+                  <ellipse cx="590" cy="118" rx="108" ry="42" />
+                </g>
+
+                <g class="tree-group">
+                  <rect class="tree-trunk" x="108" y="270" width="18" height="122" rx="8" />
+                  <ellipse class="tree-shadow" cx="118" cy="395" rx="48" ry="10" />
+                  <g class="tree-canopy tree-canopy-back">
+                    <circle class="leaf leaf-1" cx="118" cy="230" r="34" />
+                    <circle class="leaf leaf-2" cx="90" cy="250" r="28" />
+                    <circle class="leaf leaf-3" cx="145" cy="254" r="26" />
+                    <circle class="leaf leaf-4" cx="104" cy="205" r="24" />
+                    <circle class="leaf leaf-5" cx="142" cy="215" r="22" />
+                  </g>
+                  <g class="tree-canopy tree-canopy-front">
+                    <circle class="leaf leaf-6" cx="128" cy="244" r="30" />
+                    <circle class="leaf leaf-7" cx="100" cy="266" r="24" />
+                    <circle class="leaf leaf-8" cx="152" cy="236" r="20" />
+                  </g>
+                </g>
+
+                <g class="grass-field grass-back">
+                  <path class="grass-blade blade-1" d="M120 394 C124 380, 128 366, 136 342" />
+                  <path class="grass-blade blade-2" d="M136 394 C138 382, 142 368, 148 346" />
+                  <path class="grass-blade blade-3" d="M154 394 C156 380, 160 366, 170 340" />
+                  <path class="grass-blade blade-4" d="M172 394 C176 382, 182 366, 188 344" />
+                  <path class="grass-blade blade-5" d="M194 394 C196 380, 202 366, 208 342" />
+                  <path class="grass-blade blade-6" d="M214 394 C216 382, 220 368, 230 344" />
+                  <path class="grass-blade blade-7" d="M246 394 C250 382, 254 368, 262 344" />
+                  <path class="grass-blade blade-8" d="M274 394 C278 380, 284 366, 292 340" />
+                  <path class="grass-blade blade-9" d="M300 394 C302 382, 306 370, 314 346" />
+
+                  <path class="grass-blade blade-10" d="M520 394 C524 380, 528 366, 536 342" />
+                  <path class="grass-blade blade-11" d="M538 394 C540 382, 544 368, 550 346" />
+                  <path class="grass-blade blade-12" d="M556 394 C558 380, 562 366, 572 340" />
+                  <path class="grass-blade blade-13" d="M576 394 C580 382, 586 366, 592 344" />
+                  <path class="grass-blade blade-14" d="M598 394 C600 380, 606 366, 612 342" />
+                  <path class="grass-blade blade-15" d="M618 394 C620 382, 624 368, 634 344" />
+                  <path class="grass-blade blade-16" d="M642 394 C646 382, 650 368, 658 344" />
+                  <path class="grass-blade blade-17" d="M668 394 C672 380, 678 366, 686 340" />
+                </g>
+
+                <g class="house-group">
+                  <polygon
+                    class="house-roof"
+                    points="400,86 236,202 564,202"
+                    fill="url(#roofGrad)"
+                  />
+                  <rect
+                    class="house-body"
+                    x="260"
+                    y="202"
+                    width="280"
+                    height="168"
+                    rx="10"
+                    fill="url(#wallGrad)"
+                  />
+                  <rect class="house-shadow" x="286" y="224" width="228" height="124" rx="10" />
+                  <rect class="door" x="382" y="282" width="44" height="88" rx="8" />
+                  <circle class="door-knob" cx="416" cy="326" r="3.8" />
+
+                  <rect id="windowLeft" class="window" x="302" y="238" width="52" height="52" rx="8" />
+                  <rect id="windowRight" class="window" x="446" y="238" width="52" height="52" rx="8" />
+
+                  <g class="chimney-group">
+                    <rect class="chimney" x="474" y="116" width="28" height="72" rx="4" />
+                    <g id="chimneySmoke" class="chimney-smoke">
+                      <circle cx="486" cy="100" r="8" />
+                      <circle cx="498" cy="84" r="10" />
+                      <circle cx="482" cy="70" r="12" />
+                      <circle cx="501" cy="58" r="9" />
+                    </g>
+                  </g>
+
+                  <g class="solar-group">
+                    <rect class="solar-panel" x="220" y="232" width="26" height="82" rx="4" fill="url(#solarGrad)" />
+                    <line class="solar-cable" x1="246" y1="272" x2="260" y2="272" />
+                  </g>
+
+                  <g class="battery-group">
+                    <rect class="battery battery-outline" x="596" y="220" width="74" height="132" rx="18" />
+                    <rect class="battery-cap" x="622" y="206" width="22" height="10" rx="3" />
+                    <rect id="batteryFill" class="battery-fill" x="608" y="334" width="50" height="6" rx="6" fill="url(#meterGrad)" />
+                  </g>
+
+                  <g class="energy-lines">
+                    <path id="powerLineOne" class="energy-line" d="M120 116 C 210 108, 254 140, 286 214" />
+                    <path id="powerLineTwo" class="energy-line" d="M642 220 C 594 214, 552 230, 508 262" />
+                    <path id="powerLineThree" class="energy-line" d="M220 272 C 276 270, 326 286, 382 324" />
+                  </g>
+
+                  <g id="windFlow" class="wind-flow">
+                    <path d="M88 160 C 170 144, 242 148, 330 170" />
+                    <path d="M76 188 C 162 174, 240 182, 336 202" />
+                    <path d="M90 216 C 186 198, 272 210, 360 228" />
+                  </g>
+
+                  <g id="sprinklerGroup" class="sprinkler-group">
+                    <line class="sprinkler-post" x1="580" y1="392" x2="580" y2="336" />
+                    <circle class="sprinkler-head" cx="580" cy="332" r="6" />
+                    <path class="spray spray-left" d="M580 332 C 548 318, 516 308, 484 298" />
+                    <path class="spray spray-mid" d="M580 332 C 580 302, 580 280, 580 256" />
+                    <path class="spray spray-right" d="M580 332 C 612 318, 644 308, 676 298" />
+                  </g>
+                </g>
+
+                <g class="grass-field grass-front">
+                  <path class="grass-blade blade-18" d="M104 394 C108 378, 114 360, 124 330" />
+                  <path class="grass-blade blade-19" d="M124 394 C126 380, 132 364, 138 338" />
+                  <path class="grass-blade blade-20" d="M144 394 C148 378, 154 360, 164 332" />
+                  <path class="grass-blade blade-21" d="M166 394 C168 380, 172 364, 180 338" />
+                  <path class="grass-blade blade-22" d="M186 394 C190 378, 196 360, 206 334" />
+                  <path class="grass-blade blade-1" d="M208 394 C210 380, 216 364, 224 338" />
+                  <path class="grass-blade blade-2" d="M232 394 C236 378, 242 360, 252 334" />
+                  <path class="grass-blade blade-3" d="M258 394 C260 380, 264 366, 270 340" />
+                  <path class="grass-blade blade-4" d="M284 394 C288 378, 294 360, 302 334" />
+
+                  <path class="grass-blade blade-5" d="M500 394 C504 378, 510 360, 520 330" />
+                  <path class="grass-blade blade-6" d="M522 394 C524 380, 530 364, 536 338" />
+                  <path class="grass-blade blade-7" d="M544 394 C548 378, 554 360, 564 332" />
+                  <path class="grass-blade blade-8" d="M568 394 C570 380, 574 364, 582 338" />
+                  <path class="grass-blade blade-9" d="M590 394 C594 378, 600 360, 610 334" />
+                  <path class="grass-blade blade-10" d="M614 394 C616 380, 622 364, 630 338" />
+                  <path class="grass-blade blade-11" d="M640 394 C644 378, 650 360, 660 334" />
+                  <path class="grass-blade blade-12" d="M666 394 C668 380, 672 366, 678 340" />
+                  <path class="grass-blade blade-13" d="M690 394 C694 378, 700 360, 708 334" />
+                </g>
+              </g>
+            </svg>
+          </div>
+
+          <div class="activation-readout">
+            <div class="readout-block">
+              <span class="readout-label">House brightness</span>
+              <strong id="houseBrightnessValue">12%</strong>
+            </div>
+            <div class="readout-block">
+              <span class="readout-label">Grid charge</span>
+              <strong id="gridChargeValue">8%</strong>
+            </div>
+            <div class="readout-block">
+              <span class="readout-label">Motion response</span>
+              <strong id="motionResponseValue">gentle</strong>
+            </div>
+            <div class="readout-block">
+              <span class="readout-label">Points</span>
+              <strong id="pointsValue">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <aside class="sidebar-column">
+          <section class="metrics-grid">
+            <div class="metric-card card compact">
+              <span class="metric-label">People / presence</span>
+              <strong id="peopleCountValue">0</strong>
+            </div>
+            <div class="metric-card card compact">
+              <span class="metric-label">Motion score</span>
+              <strong id="motionScoreValue">0.000</strong>
+            </div>
+            <div class="metric-card card compact">
+              <span class="metric-label">Energy score</span>
+              <strong id="energyScoreValue">0.000</strong>
+            </div>
+          </section>
+
+          <section class="card outputs-card">
+            <div class="card-header">
+              <div>
+                <p class="card-kicker">Outputs</p>
+                <h2>Energy Meters</h2>
+              </div>
+            </div>
+
+            <div class="meter-list">
+              <div class="meter-row">
+                <div class="meter-meta">
+                  <span>Electricity / Light</span>
+                  <strong id="electricityValue">0%</strong>
+                </div>
+                <div class="meter-track">
+                  <div id="electricityFill" class="meter-fill electricity"></div>
+                </div>
+              </div>
+
+              <div class="meter-row">
+                <div class="meter-meta">
+                  <span>Heat</span>
+                  <strong id="heatValue">0%</strong>
+                </div>
+                <div class="meter-track">
+                  <div id="heatFill" class="meter-fill heat"></div>
+                </div>
+              </div>
+
+              <div class="meter-row">
+                <div class="meter-meta">
+                  <span>Hydro</span>
+                  <strong id="hydroValue">0%</strong>
+                </div>
+                <div class="meter-track">
+                  <div id="hydroFill" class="meter-fill hydro"></div>
+                </div>
+              </div>
+
+              <div class="meter-row">
+                <div class="meter-meta">
+                  <span>Wind</span>
+                  <strong id="windValue">0%</strong>
+                </div>
+                <div class="meter-track">
+                  <div id="windFill" class="meter-fill wind"></div>
+                </div>
+              </div>
+
+              <div class="meter-row">
+                <div class="meter-meta">
+                  <span>Stored Power</span>
+                  <strong id="storageValue">0%</strong>
+                </div>
+                <div class="meter-track">
+                  <div id="storageFill" class="meter-fill storage"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card log-card">
+            <div class="card-header">
+              <div>
+                <p class="card-kicker">System activity</p>
+                <h2>Live Log</h2>
+              </div>
+            </div>
+            <pre id="logBox" class="log-box"></pre>
+          </section>
+        </aside>
+      </main>
+
+      <video id="cameraFeed" autoplay playsinline muted hidden></video>
+      <canvas id="motionSampler" width="160" height="90" hidden></canvas>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
 </html>
